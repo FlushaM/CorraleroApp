@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const CarniceriaPage = () => {
@@ -8,29 +8,46 @@ const CarniceriaPage = () => {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productoEditando, setProductoEditando] = useState(null);
+  const [token, setToken] = useState('');
+
+  // Recuperar el token del localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
 
   const validarProducto = async () => {
     if (!codigo || !kilos || parseFloat(kilos) <= 0) {
-      setError('Por favor, ingresa un código válido y una cantidad mayor a 0.');
-      return;
+        setError('Por favor, ingresa un código válido y una cantidad mayor a 0.');
+        return;
     }
 
+    const token = localStorage.getItem('token'); // Asegúrate de obtener el token
+
     try {
-      const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`);
-      if (response.data.valido) {
-        const nuevoProducto = { ...response.data.producto, kilos: parseFloat(kilos) };
-        setProductos([...productos, nuevoProducto]);
-        setCodigo('');
-        setKilos('');
-        setError('');
-      } else {
-        setError('Código inválido');
-      }
+        const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
+            headers: {
+                Authorization: `Bearer ${token}`, // Incluye el token en las cabeceras
+            },
+        });
+        console.log('Respuesta del backend:', response.data);
+
+        if (response.data.valido) {
+            const nuevoProducto = { ...response.data.producto, kilos: parseFloat(kilos) };
+            setProductos([...productos, nuevoProducto]);
+            setCodigo('');
+            setKilos('');
+            setError('');
+        } else {
+            setError('Código inválido');
+        }
     } catch (error) {
-      console.error('Error al validar producto:', error);
-      setError('Error al validar producto');
+        console.error('Error al validar producto:', error);
+        setError('Error al validar producto');
     }
-  };
+};
 
   const eliminarProducto = (codigo) => {
     const nuevaLista = productos.filter((producto) => producto.codigo !== codigo);
@@ -65,13 +82,18 @@ const CarniceriaPage = () => {
       return;
     }
 
-    const responsable = 'Juan Pérez'; // Puedes reemplazarlo con un campo dinámico
+    const responsable = 'Juan Pérez'; // Reemplazarlo con un campo dinámico o usuario logueado
 
     try {
-      const response = await axios.post('http://localhost:5000/api/entregas', {
-        productos,
-        responsable,
-      });
+      const response = await axios.post(
+        'http://localhost:5000/api/entregas',
+        { productos, responsable },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+          },
+        }
+      );
       alert('Entrega enviada correctamente');
       setProductos([]); // Limpia la lista de productos después de enviar
     } catch (error) {
@@ -170,6 +192,3 @@ const CarniceriaPage = () => {
 };
 
 export default CarniceriaPage;
-
-
-

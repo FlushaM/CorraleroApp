@@ -1,26 +1,19 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import CarniceriaPage from "./modules/Carniceria/CarniceriaPage";
-import AdminDashboard from "./components/AdminDashboard";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LoginPage from './components/LoginPage';
+import AdminDashboard from './components/AdminDashboard';
+import CarniceriaPage from './modules/Carniceria/CarniceriaPage';
 
-function App() {
-  return (
-    <Router>
-      <nav>
-        <Link to="/carniceria">Carnicería</Link>
-        <Link to="/verduleria">Verdulería</Link>
-        <Link to="/fiambreria">Fiambrería</Link>
-        <Link to="/dashboard">Dashboard</Link> {/* Agregamos el enlace al Dashboard */}
-      </nav>
-      <Routes>
-        <Route path="/carniceria" element={<CarniceriaPage />} />
-        <Route path="/verduleria" element={<div>Verdulería</div>} />
-        <Route path="/fiambreria" element={<div>Fiambrería</div>} />
-        <Route path="/dashboard" element={<AdminDashboard />} /> {/* Ruta para el Dashboard */}
-      </Routes>
-    </Router>
-  );
-}
+const App = () => {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<LoginPage />} />
+                <Route path="/dashboard" element={<AdminDashboard />} />
+                <Route path="/carniceria" element={<CarniceriaPage />} />
+            </Routes>
+        </Router>
+    );
+};
 
 export default App;
-

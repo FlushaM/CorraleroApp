@@ -1,14 +1,12 @@
 const express = require('express');
-const { registrarEntrega,obtenerEntregas, obtenerDetalleEntrega } = require('../controllers/entregasController');
+const { registrarEntrega, obtenerEntregas, obtenerDetalleEntrega } = require('../controllers/entregasController');
+const verifyToken = require('../middlewares/authMiddleware'); // Middleware de autenticación
 
 const router = express.Router();
 
-// Ruta para registrar una nueva entrega
-router.post('/', registrarEntrega);
-// Ruta para obtener todas las entregas
-router.get('/', obtenerEntregas);
-
-// Ruta para obtener detalles de una entrega específica
-router.get('/:id', obtenerDetalleEntrega);
+// Rutas protegidas para las entregas
+router.post('/', verifyToken, registrarEntrega); // Crear nueva entrega
+router.get('/', verifyToken, obtenerEntregas);   // Obtener todas las entregas
+router.get('/:id', verifyToken, obtenerDetalleEntrega); // Obtener detalles de una entrega
 
 module.exports = router;
