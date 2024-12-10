@@ -1,34 +1,33 @@
 const pool = require('../db');
 
 // Obtener todos los productos
-const obtenerProductos = async (req, res) => {
+const getProductos = async (req, res) => {
   try {
-    const { supermercado } = req.query; // Filtrar por supermercado si se pasa como query
-    const query = supermercado
-      ? 'SELECT * FROM productos WHERE supermercado = $1'
-      : 'SELECT * FROM productos';
-    const valores = supermercado ? [supermercado] : [];
-    const resultado = await pool.query(query, valores);
-    res.json(resultado.rows);
+    const result = await pool.query('SELECT * FROM productos');
+    res.json(result.rows);
   } catch (error) {
-    console.error('Error al obtener productos:', error.message);
-    res.status(500).json({ error: 'Error del servidor' });
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener productos' });
   }
 };
 
-// Agregar un nuevo producto
-const agregarProducto = async (req, res) => {
-  const { codigo, descripcion, unidad, supermercado } = req.body;
+// Validar producto por código
+const getProductoByCodigo = async (req, res) => {
+  const { codigo } = req.params;
   try {
-    const query =
-      'INSERT INTO productos (codigo, descripcion, unidad, supermercado) VALUES ($1, $2, $3, $4) RETURNING *';
-    const valores = [codigo, descripcion, unidad, supermercado];
-    const resultado = await pool.query(query, valores);
-    res.status(201).json(resultado.rows[0]);
+    const result = await pool.query('SELECT * FROM productos WHERE codigo = $1', [codigo]);
+    if (result.rows.length > 0) {
+      res.json({ valido: true, producto: result.rows[0] });
+    } else {
+      res.status(404).json({ valido: false, message: 'Producto no encontrado' });
+    }
   } catch (error) {
-    console.error('Error al agregar producto:', error.message);
-    res.status(500).json({ error: 'Error del servidor' });
+    console.error(error);
+    res.status(500).json({ error: 'Error al buscar producto' });
   }
 };
 
-module.exports = { obtenerProductos, agregarProducto };
+module.exports = {
+  getProductos,
+  getProductoByCodigo,
+};
