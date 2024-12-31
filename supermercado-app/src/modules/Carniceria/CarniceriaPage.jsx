@@ -1,53 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import "./CarniceriaPage.css";
+import Header from "../../components/Header";
+
+
 
 const CarniceriaPage = () => {
-  const [codigo, setCodigo] = useState('');
-  const [kilos, setKilos] = useState('');
+  const [codigo, setCodigo] = useState("");
+  const [kilos, setKilos] = useState("");
   const [productos, setProductos] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productoEditando, setProductoEditando] = useState(null);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
+  const [user, setUser] = useState({ nombre: "", email: "" }); // Estado para almacenar el usuario
 
-  // Recuperar el token del localStorage
+  // Recuperar el token y usuario del localStorage
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
+    const storedToken = localStorage.getItem("token");
+    const storedUser = JSON.parse(localStorage.getItem("user")); // Recupera el usuario guardado en localStorage
+
     if (storedToken) {
       setToken(storedToken);
+    }
+
+    if (storedUser) {
+      setUser(storedUser);
     }
   }, []);
 
   const validarProducto = async () => {
     if (!codigo || !kilos || parseFloat(kilos) <= 0) {
-        setError('Por favor, ingresa un código válido y una cantidad mayor a 0.');
-        return;
+      setError("Por favor, ingresa un código válido y una cantidad mayor a 0.");
+      return;
     }
-
-    const token = localStorage.getItem('token'); // Asegúrate de obtener el token
 
     try {
-        const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
-            headers: {
-                Authorization: `Bearer ${token}`, // Incluye el token en las cabeceras
-            },
-        });
-        console.log('Respuesta del backend:', response.data);
+      const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (response.data.valido) {
-            const nuevoProducto = { ...response.data.producto, kilos: parseFloat(kilos) };
-            setProductos([...productos, nuevoProducto]);
-            setCodigo('');
-            setKilos('');
-            setError('');
-        } else {
-            setError('Código inválido');
-        }
+      if (response.data.valido) {
+        const nuevoProducto = { ...response.data.producto, kilos: parseFloat(kilos) };
+        setProductos([...productos, nuevoProducto]);
+        setCodigo("");
+        setKilos("");
+        setError("");
+      } else {
+        setError("Código inválido");
+      }
     } catch (error) {
-        console.error('Error al validar producto:', error);
-        setError('Error al validar producto');
+      console.error("Error al validar producto:", error);
+      setError("Error al validar producto");
     }
-};
+  };
 
   const eliminarProducto = (codigo) => {
     const nuevaLista = productos.filter((producto) => producto.codigo !== codigo);
@@ -65,128 +75,109 @@ const CarniceriaPage = () => {
       producto.codigo === productoEditando.codigo ? { ...producto, kilos: parseFloat(kilos) } : producto
     );
     setProductos(nuevaLista);
-    setProductoEditando(null);
-    setIsModalOpen(false);
-    setKilos('');
+    cerrarModal();
   };
 
   const cerrarModal = () => {
     setIsModalOpen(false);
     setProductoEditando(null);
-    setKilos('');
+    setKilos("");
   };
 
   const enviarEntrega = async () => {
     if (productos.length === 0) {
-      alert('No hay productos en la lista para enviar.');
+      Swal.fire("Error", "No hay productos en la lista para enviar.", "error");
       return;
     }
 
-    const responsable = 'Juan Pérez'; // Reemplazarlo con un campo dinámico o usuario logueado
-
-    try {
-      const response = await axios.post(
-        'http://localhost:5000/api/entregas',
-        { productos, responsable },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
-          },
+    Swal.fire({
+      title: "¿Confirmar envío?",
+      text: "¿Estás seguro de que deseas enviar esta entrega?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, enviar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.post(
+            "http://localhost:5000/api/entregas",
+            { productos, responsable: user.nombre || user.email }, // Usa el nombre o email del usuario
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          Swal.fire("¡Éxito!", "Entrega enviada correctamente.", "success");
+          setProductos([]);
+        } catch (error) {
+          console.error("Error al enviar la entrega:", error);
+          Swal.fire("Error", "Hubo un problema al enviar la entrega.", "error");
         }
-      );
-      alert('Entrega enviada correctamente');
-      setProductos([]); // Limpia la lista de productos después de enviar
-    } catch (error) {
-      console.error('Error al enviar la entrega:', error);
-      alert('Error al enviar la entrega');
-    }
+      }
+    });
   };
 
   return (
     <div>
-      <h1>Carnicería</h1>
-      <div>
-        <input
-          type="text"
-          placeholder="Código"
-          value={codigo}
-          onChange={(e) => setCodigo(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Kilos"
-          value={kilos}
-          onChange={(e) => setKilos(e.target.value)}
-        />
-        <button onClick={validarProducto}>Agregar</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th>Kilos</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {productos.map((producto) => (
-            <tr key={producto.id_producto}>
-              <td>{producto.codigo}</td>
-              <td>{producto.descripcion}</td>
-              <td>{`${producto.kilos} kg`}</td>
-              <td>
-                <button onClick={() => abrirModalEdicion(producto)}>Modificar</button>
-                <button onClick={() => eliminarProducto(producto.codigo)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button
-        style={{
-          marginTop: '20px',
-          backgroundColor: 'green',
-          color: 'white',
-          padding: '10px 20px',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-        onClick={enviarEntrega}
-      >
-        Enviar Entrega
-      </button>
-
-      {/* Modal para edición */}
-      {isModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white',
-            padding: '20px',
-            boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.25)',
-            zIndex: 1000,
-          }}
-        >
-          <h2>Editar Producto</h2>
-          <p>{`Código: ${productoEditando.codigo}`}</p>
-          <p>{`Descripción: ${productoEditando.descripcion}`}</p>
-          <input
-            type="number"
-            placeholder="Kilos"
-            value={kilos}
-            onChange={(e) => setKilos(e.target.value)}
-          />
-          <button onClick={guardarEdicion}>Guardar</button>
-          <button onClick={cerrarModal} style={{ marginLeft: '10px' }}>
-            Cancelar
-          </button>
+      <Header logo="/img/LOGOCORRALERO.png" userName={user.nombre || user.email} />
+      <div className="page-container">
+        <div className="container">
+          <h1>Carnicería</h1>
+          <div className="form-container">
+            <input
+              type="text"
+              placeholder="Código"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="Kilos"
+              value={kilos}
+              onChange={(e) => setKilos(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={validarProducto}>
+              Agregar
+            </button>
+            {error && <p style={{ color: "red" }}>{error}</p>}
+          </div>
+          {/* Contenedor para hacer la tabla desplazable */}
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Kilos</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productos.map((producto) => (
+                  <tr key={producto.codigo}>
+                    <td>{producto.codigo}</td>
+                    <td>{producto.descripcion}</td>
+                    <td>{`${producto.kilos} kg`}</td>
+                    <td>
+                      <button className="btn btn-warning">
+                        <FaEdit /> Modificar
+                      </button>
+                      <button className="btn btn-danger">
+                        <FaTrash /> Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="btn btn-success">Enviar Entrega</button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 
 const CarniceriaForm = ({ onAddIngreso }) => {
   const [codigo, setCodigo] = useState("");
@@ -6,15 +7,34 @@ const CarniceriaForm = ({ onAddIngreso }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const nuevoIngreso = {
-      codigo,
-      kilo,
-      responsable: "Juan Pérez", // Temporal, se puede cambiar
-      fecha: new Date(),
-    };
-    onAddIngreso(nuevoIngreso);
-    setCodigo("");
-    setKilo("");
+  
+    // Mostrar confirmación con SweetAlert2
+    Swal.fire({
+      title: "¿Confirmar envío?",
+      text: "¿Estás seguro de que deseas enviar este ingreso?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, enviar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const nuevoIngreso = {
+          codigo,
+          kilo,
+          responsable: "Juan Pérez", // Temporal, se puede cambiar
+          fecha: new Date(),
+        };
+        onAddIngreso(nuevoIngreso); // Llama la función que maneja el ingreso
+        setCodigo("");
+        setKilo("");
+        
+        Swal.fire("¡Enviado!", "El ingreso ha sido enviado correctamente.", "success");
+      } else {
+        console.log("Ingreso cancelado por el usuario.");
+      }
+    });
   };
 
   return (
