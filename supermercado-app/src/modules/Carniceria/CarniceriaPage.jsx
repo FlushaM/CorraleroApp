@@ -5,27 +5,21 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import "./CarniceriaPage.css";
 import Header from "../../components/Header";
 
-
-
 const CarniceriaPage = () => {
   const [codigo, setCodigo] = useState("");
   const [kilos, setKilos] = useState("");
   const [productos, setProductos] = useState([]);
   const [error, setError] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [productoEditando, setProductoEditando] = useState(null);
   const [token, setToken] = useState("");
-  const [user, setUser] = useState({ nombre: "", email: "" }); // Estado para almacenar el usuario
+  const [user, setUser] = useState({ nombre: "", email: "" });
 
   // Recuperar el token y usuario del localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
-    const storedUser = JSON.parse(localStorage.getItem("user")); // Recupera el usuario guardado en localStorage
-
+    const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedToken) {
       setToken(storedToken);
     }
-
     if (storedUser) {
       setUser(storedUser);
     }
@@ -36,17 +30,35 @@ const CarniceriaPage = () => {
       setError("Por favor, ingresa un código válido y una cantidad mayor a 0.");
       return;
     }
-
+  
     try {
       const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       if (response.data.valido) {
-        const nuevoProducto = { ...response.data.producto, kilos: parseFloat(kilos) };
-        setProductos([...productos, nuevoProducto]);
+        const nuevoPeso = parseFloat(kilos);
+  
+        // Verificar si el código ya existe en la lista
+        const productoExistente = productos.find((producto) => producto.codigo === codigo);
+  
+        if (productoExistente) {
+          // Si el producto ya existe, suma los kilos al peso actual
+          const nuevaLista = productos.map((producto) =>
+            producto.codigo === codigo
+              ? { ...producto, kilos: producto.kilos + nuevoPeso }
+              : producto
+          );
+          setProductos(nuevaLista);
+          Swal.fire("Actualizado", "El peso se ha actualizado correctamente.", "success");
+        } else {
+          // Si el producto no existe, agregarlo como nuevo
+          const nuevoProducto = { ...response.data.producto, kilos: nuevoPeso };
+          setProductos([...productos, nuevoProducto]);
+          Swal.fire("Agregado", "Producto agregado correctamente.", "success");
+        }
+  
+        // Limpiar los campos de entrada
         setCodigo("");
         setKilos("");
         setError("");
@@ -60,28 +72,84 @@ const CarniceriaPage = () => {
   };
 
   const eliminarProducto = (codigo) => {
-    const nuevaLista = productos.filter((producto) => producto.codigo !== codigo);
-    setProductos(nuevaLista);
+    Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Esta acción no se puede deshacer. ¿Deseas eliminar este producto?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const nuevaLista = productos.filter((producto) => producto.codigo !== codigo);
+        setProductos(nuevaLista);
+        Swal.fire("Eliminado", "Producto eliminado correctamente.", "success");
+      }
+    });
   };
 
-  const abrirModalEdicion = (producto) => {
-    setProductoEditando(producto);
-    setKilos(producto.kilos);
-    setIsModalOpen(true);
-  };
-
-  const guardarEdicion = () => {
-    const nuevaLista = productos.map((producto) =>
-      producto.codigo === productoEditando.codigo ? { ...producto, kilos: parseFloat(kilos) } : producto
-    );
-    setProductos(nuevaLista);
-    cerrarModal();
-  };
-
-  const cerrarModal = () => {
-    setIsModalOpen(false);
-    setProductoEditando(null);
-    setKilos("");
+  const abrirSweetAlertEdicion = (producto) => {
+    Swal.fire({
+      title: "Editar Producto",
+      html: `
+        <label for="codigoInput">Código:</label>
+        <input id="codigoInput" class="swal2-input" value="${producto.codigo}" />
+        <label for="kilosInput">Kilos:</label>
+        <input id="kilosInput" type="number" class="swal2-input" value="${producto.kilos}" />
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      cancelButtonText: "Cancelar",
+      preConfirm: () => {
+        const nuevoCodigo = document.getElementById("codigoInput").value.trim();
+        const nuevoKilos = parseFloat(document.getElementById("kilosInput").value);
+  
+        if (!nuevoCodigo || isNaN(nuevoKilos) || nuevoKilos <= 0) {
+          Swal.showValidationMessage("Por favor, ingresa valores válidos.");
+          return false;
+        }
+  
+        return { nuevoCodigo, nuevoKilos };
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const { nuevoCodigo, nuevoKilos } = result.value;
+  
+        try {
+          // Validar y obtener la nueva descripción del producto
+          const response = await axios.get(`http://localhost:5000/api/productos/${nuevoCodigo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+  
+          if (response.data.valido) {
+            const nuevaDescripcion = response.data.producto.descripcion;
+  
+            // Actualizar la lista de productos
+            const nuevaLista = productos.map((p) =>
+              p.codigo === producto.codigo
+                ? {
+                    ...p,
+                    codigo: nuevoCodigo,
+                    kilos: nuevoKilos,
+                    descripcion: nuevaDescripcion,
+                  }
+                : p
+            );
+  
+            setProductos(nuevaLista);
+            Swal.fire("Modificado", "Producto modificado correctamente.", "success");
+          } else {
+            Swal.fire("Error", "El nuevo código no es válido.", "error");
+          }
+        } catch (error) {
+          console.error("Error al validar el nuevo código:", error);
+          Swal.fire("Error", "Hubo un problema al validar el nuevo código.", "error");
+        }
+      }
+    });
   };
 
   const enviarEntrega = async () => {
@@ -89,7 +157,6 @@ const CarniceriaPage = () => {
       Swal.fire("Error", "No hay productos en la lista para enviar.", "error");
       return;
     }
-
     Swal.fire({
       title: "¿Confirmar envío?",
       text: "¿Estás seguro de que deseas enviar esta entrega?",
@@ -104,12 +171,8 @@ const CarniceriaPage = () => {
         try {
           await axios.post(
             "http://localhost:5000/api/entregas",
-            { productos, responsable: user.nombre || user.email }, // Usa el nombre o email del usuario
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
+            { productos, responsable: user.nombre || user.email },
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           Swal.fire("¡Éxito!", "Entrega enviada correctamente.", "success");
           setProductos([]);
@@ -145,7 +208,6 @@ const CarniceriaPage = () => {
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
           </div>
-          {/* Contenedor para hacer la tabla desplazable */}
           <div className="table-container">
             <table className="table">
               <thead>
@@ -163,10 +225,16 @@ const CarniceriaPage = () => {
                     <td>{producto.descripcion}</td>
                     <td>{`${producto.kilos} kg`}</td>
                     <td>
-                      <button className="btn btn-warning">
+                      <button
+                        className="btn btn-warning"
+                        onClick={() => abrirSweetAlertEdicion(producto)}
+                      >
                         <FaEdit /> Modificar
                       </button>
-                      <button className="btn btn-danger">
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => eliminarProducto(producto.codigo)}
+                      >
                         <FaTrash /> Eliminar
                       </button>
                     </td>
@@ -175,7 +243,9 @@ const CarniceriaPage = () => {
               </tbody>
             </table>
           </div>
-          <button className="btn btn-success">Enviar Entrega</button>
+          <button className="btn btn-success" onClick={enviarEntrega}>
+            Enviar Entrega
+          </button>
         </div>
       </div>
     </div>
