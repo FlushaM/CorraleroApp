@@ -94,8 +94,7 @@ const CarniceriaPage = () => {
     Swal.fire({
       title: "Editar Producto",
       html: `
-        <label for="codigoInput">Código:</label>
-        <input id="codigoInput" class="swal2-input" value="${producto.codigo}" />
+        <label>Código: ${producto.codigo}</label><br />
         <label for="kilosInput">Kilos:</label>
         <input id="kilosInput" type="number" class="swal2-input" value="${producto.kilos}" />
       `,
@@ -104,53 +103,29 @@ const CarniceriaPage = () => {
       confirmButtonText: "Guardar",
       cancelButtonText: "Cancelar",
       preConfirm: () => {
-        const nuevoCodigo = document.getElementById("codigoInput").value.trim();
         const nuevoKilos = parseFloat(document.getElementById("kilosInput").value);
   
-        if (!nuevoCodigo || isNaN(nuevoKilos) || nuevoKilos <= 0) {
-          Swal.showValidationMessage("Por favor, ingresa valores válidos.");
+        if (isNaN(nuevoKilos) || nuevoKilos <= 0) {
+          Swal.showValidationMessage("Por favor, ingresa un peso válido.");
           return false;
         }
   
-        return { nuevoCodigo, nuevoKilos };
+        return { nuevoKilos };
       },
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        const { nuevoCodigo, nuevoKilos } = result.value;
+        const { nuevoKilos } = result.value;
   
-        try {
-          // Validar y obtener la nueva descripción del producto
-          const response = await axios.get(`http://localhost:5000/api/productos/${nuevoCodigo}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-  
-          if (response.data.valido) {
-            const nuevaDescripcion = response.data.producto.descripcion;
-  
-            // Actualizar la lista de productos
-            const nuevaLista = productos.map((p) =>
-              p.codigo === producto.codigo
-                ? {
-                    ...p,
-                    codigo: nuevoCodigo,
-                    kilos: nuevoKilos,
-                    descripcion: nuevaDescripcion,
-                  }
-                : p
-            );
-  
-            setProductos(nuevaLista);
-            Swal.fire("Modificado", "Producto modificado correctamente.", "success");
-          } else {
-            Swal.fire("Error", "El nuevo código no es válido.", "error");
-          }
-        } catch (error) {
-          console.error("Error al validar el nuevo código:", error);
-          Swal.fire("Error", "Hubo un problema al validar el nuevo código.", "error");
-        }
+        // Actualizar solo el peso
+        const nuevaLista = productos.map((p) =>
+          p.codigo === producto.codigo ? { ...p, kilos: nuevoKilos } : p
+        );
+        setProductos(nuevaLista);
+        Swal.fire("Modificado", "El peso ha sido actualizado correctamente.", "success");
       }
     });
   };
+  
 
   const enviarEntrega = async () => {
     if (productos.length === 0) {
