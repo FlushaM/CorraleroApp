@@ -160,70 +160,72 @@ const CarniceriaPage = () => {
   };
 
   return (
-    <div>
-      <Header logo="/img/LOGOCORRALERO.png" userName={user.nombre || user.email} />
-      <div className="page-container">
-        <div className="container">
-          <h1>Carnicería</h1>
-          <div className="form-container">
-            <input
-              type="text"
-              placeholder="Código"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Kilos"
-              value={kilos}
-              onChange={(e) => setKilos(e.target.value)}
-            />
-            <button className="btn btn-primary" onClick={validarProducto}>
-              Agregar
-            </button>
-            {error && <p style={{ color: "red" }}>{error}</p>}
-          </div>
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Descripción</th>
-                  <th>Kilos</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.map((producto) => (
-                  <tr key={producto.codigo}>
-                    <td>{producto.codigo}</td>
-                    <td>{producto.descripcion}</td>
-                    <td>{`${producto.kilos} kg`}</td>
-                    <td>
-                      <button
-                        className="btn btn-warning"
-                        onClick={() => abrirSweetAlertEdicion(producto)}
-                      >
-                        <FaEdit /> Modificar
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => eliminarProducto(producto.codigo)}
-                      >
-                        <FaTrash /> Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button className="btn btn-success" onClick={enviarEntrega}>
-            Enviar Entrega
-          </button>
-        </div>
+<div>
+  <Header logo="/img/LOGOCORRALERO.png" userName={user.nombre || user.email} />
+  <div className="page-container">
+    <div className="container">
+      <h1>Carnicería</h1>
+      <div className="form-container">
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="Código"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+        />
+        <input
+          type="number"
+          className="form-control mb-2"
+          placeholder="Kilos"
+          value={kilos}
+          onChange={(e) => setKilos(e.target.value)}
+        />
+        <button className="btn btn-primary mb-2" onClick={validarProducto}>
+          Agregar
+        </button>
+        {error && <p className="text-danger">{error}</p>}
       </div>
+
+      {/* Diseño de tarjetas responsivo */}
+      <div className="card-container">
+        {productos.map((producto, index) => (
+          <div key={`${producto.codigo}-${index}`} className="card">
+            <div className="card-body">
+              <p>
+                <strong>Código:</strong> {producto.codigo}
+              </p>
+              <p>
+                <strong>Descripción:</strong> {producto.descripcion}
+              </p>
+              <p>
+                <strong>Kilos:</strong> {producto.kilos} kg
+              </p>
+              <div className="actions">
+                <button
+                  className="btn btn-warning me-2"
+                  onClick={() => abrirSweetAlertEdicion(producto)}
+                >
+                  <FaEdit /> Modificar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => eliminarProducto(producto.codigo)}
+                >
+                  <FaTrash /> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button className="btn btn-success mt-3" onClick={enviarEntrega}>
+        Enviar Entrega
+      </button>
     </div>
+  </div>
+</div>
+
   );
 };
 
