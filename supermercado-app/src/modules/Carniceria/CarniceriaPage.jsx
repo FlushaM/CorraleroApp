@@ -13,7 +13,18 @@ const CarniceriaPage = () => {
   const [token, setToken] = useState("");
   const [user, setUser] = useState({ nombre: "", email: "" });
 
-  // Recuperar el token y usuario del localStorage
+  // Guardar lista en localStorage
+  const guardarListaEnLocalStorage = (productos) => {
+    localStorage.setItem("listaProductos", JSON.stringify(productos));
+  };
+
+  // Cargar lista desde localStorage
+  const cargarListaDesdeLocalStorage = () => {
+    const listaGuardada = localStorage.getItem("listaProductos");
+    return listaGuardada ? JSON.parse(listaGuardada) : [];
+  };
+
+  // Recuperar el token, usuario y lista guardada desde el localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -23,6 +34,12 @@ const CarniceriaPage = () => {
     if (storedUser) {
       setUser(storedUser);
     }
+
+    // Cargar la lista de productos si existe
+    const listaGuardada = cargarListaDesdeLocalStorage();
+    if (listaGuardada.length > 0) {
+      setProductos(listaGuardada);
+    }
   }, []);
 
   const validarProducto = async () => {
@@ -30,18 +47,18 @@ const CarniceriaPage = () => {
       setError("Por favor, ingresa un código válido y una cantidad mayor a 0.");
       return;
     }
-  
+
     try {
       const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       if (response.data.valido) {
         const nuevoPeso = parseFloat(kilos);
-  
+
         // Verificar si el código ya existe en la lista
         const productoExistente = productos.find((producto) => producto.codigo === codigo);
-  
+
         if (productoExistente) {
           // Si el producto ya existe, suma los kilos al peso actual
           const nuevaLista = productos.map((producto) =>
@@ -50,14 +67,17 @@ const CarniceriaPage = () => {
               : producto
           );
           setProductos(nuevaLista);
+          guardarListaEnLocalStorage(nuevaLista); // Guardar en localStorage
           Swal.fire("Actualizado", "El peso se ha actualizado correctamente.", "success");
         } else {
           // Si el producto no existe, agregarlo como nuevo
           const nuevoProducto = { ...response.data.producto, kilos: nuevoPeso };
-          setProductos([...productos, nuevoProducto]);
+          const nuevaLista = [...productos, nuevoProducto];
+          setProductos(nuevaLista);
+          guardarListaEnLocalStorage(nuevaLista); // Guardar en localStorage
           Swal.fire("Agregado", "Producto agregado correctamente.", "success");
         }
-  
+
         // Limpiar los campos de entrada
         setCodigo("");
         setKilos("");
@@ -85,6 +105,7 @@ const CarniceriaPage = () => {
       if (result.isConfirmed) {
         const nuevaLista = productos.filter((producto) => producto.codigo !== codigo);
         setProductos(nuevaLista);
+        guardarListaEnLocalStorage(nuevaLista); // Guardar en localStorage
         Swal.fire("Eliminado", "Producto eliminado correctamente.", "success");
       }
     });
@@ -104,28 +125,28 @@ const CarniceriaPage = () => {
       cancelButtonText: "Cancelar",
       preConfirm: () => {
         const nuevoKilos = parseFloat(document.getElementById("kilosInput").value);
-  
+
         if (isNaN(nuevoKilos) || nuevoKilos <= 0) {
           Swal.showValidationMessage("Por favor, ingresa un peso válido.");
           return false;
         }
-  
+
         return { nuevoKilos };
       },
     }).then((result) => {
       if (result.isConfirmed) {
         const { nuevoKilos } = result.value;
-  
+
         // Actualizar solo el peso
         const nuevaLista = productos.map((p) =>
           p.codigo === producto.codigo ? { ...p, kilos: nuevoKilos } : p
         );
         setProductos(nuevaLista);
+        guardarListaEnLocalStorage(nuevaLista); // Guardar en localStorage
         Swal.fire("Modificado", "El peso ha sido actualizado correctamente.", "success");
       }
     });
   };
-  
 
   const enviarEntrega = async () => {
     if (productos.length === 0) {
@@ -151,6 +172,7 @@ const CarniceriaPage = () => {
           );
           Swal.fire("¡Éxito!", "Entrega enviada correctamente.", "success");
           setProductos([]);
+          guardarListaEnLocalStorage([]); // Limpiar localStorage
         } catch (error) {
           console.error("Error al enviar la entrega:", error);
           Swal.fire("Error", "Hubo un problema al enviar la entrega.", "error");
