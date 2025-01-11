@@ -1,22 +1,26 @@
-const { Pool } = require('pg');
-require('dotenv').config(); // Carga las variables de entorno desde un archivo .env
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
-// Configuración de la conexión a PostgreSQL en Neon.tech
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:vJhEZx6y0Vfm@ep-curly-sun-a43l79d4.us-east-1.aws.neon.tech/neondb?sslmode=require',
-  ssl: {
-    rejectUnauthorized: false, // Necesario para conexiones SSL con Neon.tech
-  },
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME, // Nombre de la base de datos
+  process.env.DB_USER, // Usuario
+  process.env.DB_PASSWORD, // Contraseña
+  {
+    host: process.env.DB_HOST,
+    dialect: 'mysql', // Especifica que usarás MySQL
+    logging: false, // Deshabilita el logging de consultas SQL
+  }
+);
 
-// Eventos de conexión
-pool.on('connect', () => {
-  console.log('Conexión exitosa a la base de datos en Neon.tech');
-});
+// Verificar la conexión
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Conexión exitosa a la base de datos.');
+  } catch (error) {
+    console.error('Error al conectar a la base de datos:', error);
+    process.exit(1);
+  }
+})();
 
-pool.on('error', (err) => {
-  console.error('Error en la conexión a la base de datos:', err);
-});
-
-// Exportar el pool para usarlo en otros archivos
-module.exports = pool;
+module.exports = sequelize;

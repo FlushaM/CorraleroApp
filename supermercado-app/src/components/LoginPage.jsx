@@ -16,24 +16,33 @@ const LoginPage = () => {
         email,
         password,
       });
-
+  
       const { token, user } = response.data;
-
+  
       // Verifica que los datos del usuario y token son correctos
       console.log("Token recibido:", token);
       console.log("Datos del usuario:", user);
-
+  
       // Guardar el token y el usuario en el localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user)); // Guarda el usuario completo
-
+  
       // Redirigir según el rol del usuario
-      if (user.rol === "admin") {
-        navigate("/dashboard");
-      } else if (user.rol === "user") {
-        navigate("/carniceria");
-      } else {
-        setError("Rol desconocido");
+      switch (user.rol) {
+        case "admin":
+          navigate("/dashboard");
+          break;
+        case "carnicero":
+          navigate("/carniceria");
+          break;
+        case "verdulero":
+          navigate("/verduleria");
+          break;
+        case "roticeria":
+          navigate("/roticeria");
+          break;
+        default:
+          setError("Rol desconocido");
       }
     } catch (error) {
       console.error("Error en el inicio de sesión:", error);

@@ -1,4 +1,4 @@
-const pool = require('../db');
+const { Usuario } = require('../models'); // Importa el modelo de Usuario
 const jwt = require('jsonwebtoken');
 
 // Controlador para iniciar sesión
@@ -11,8 +11,7 @@ const login = async (req, res) => {
 
     try {
         // Buscar usuario por email
-        const userResult = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-        const user = userResult.rows[0];
+        const user = await Usuario.findOne({ where: { email } });
 
         if (!user) {
             return res.status(401).json({ error: 'Usuario no encontrado' });
@@ -46,24 +45,4 @@ const login = async (req, res) => {
     }
 };
 
-// Middleware para verificar el token
-const verificarToken = (req, res, next) => {
-    const token = req.headers['authorization'];
-
-    if (!token) {
-        return res.status(403).json({ error: 'No se proporcionó un token' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Adjuntar datos del usuario al objeto req
-        next();
-    } catch (error) {
-        return res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-};
-
-module.exports = {
-    login,
-    verificarToken,
-};
+module.exports = { login };
