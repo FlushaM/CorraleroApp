@@ -11,6 +11,7 @@ const DetalleEntrega = sequelize.define('DetalleEntrega', {
   },
   id_entrega: {
     type: DataTypes.INTEGER,
+    allowNull: false,
     references: {
       model: Entrega,
       key: 'id_entrega',
@@ -31,6 +32,19 @@ const DetalleEntrega = sequelize.define('DetalleEntrega', {
 }, {
   tableName: 'detalle_entrega',
   timestamps: false,
+});
+
+// Asociación con Producto
+DetalleEntrega.belongsTo(Producto, {
+  foreignKey: 'codigo_producto',
+  targetKey: 'codigo',
+  as: 'producto',
+});
+
+// Asociación con Entrega
+DetalleEntrega.belongsTo(Entrega, {
+  foreignKey: 'id_entrega',
+  as: 'entrega',
 });
 
 module.exports = DetalleEntrega;
