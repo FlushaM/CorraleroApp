@@ -157,12 +157,12 @@ const EntregaPage = ({ title }) => {
       }
     });
   };
-
   const enviarEntrega = async () => {
     if (productos.length === 0) {
       Swal.fire("Error", "No hay productos en la lista para enviar.", "error");
       return;
     }
+  
     Swal.fire({
       title: "¿Confirmar envío?",
       text: "¿Estás seguro de que deseas enviar esta entrega?",
@@ -175,10 +175,17 @@ const EntregaPage = ({ title }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
+          const payload = {
+            productos,
+            responsable: user.nombre || user.email,
+          };
+          console.log("Payload enviado:", payload); // Debugging
           await axios.post(
             "http://localhost:5000/api/entregas",
-            { productos, responsable: user.nombre || user.email },
-            { headers: { Authorization: `Bearer ${token}` } }
+            payload,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
           );
           Swal.fire("¡Éxito!", "Entrega enviada correctamente.", "success");
           setProductos([]);
@@ -190,7 +197,6 @@ const EntregaPage = ({ title }) => {
       }
     });
   };
-
   return (
     <div>
       <Header logo="/img/LOGOCORRALERO.png" userName={user.nombre || user.email} />

@@ -28,6 +28,12 @@ const Entrega = sequelize.define('Entrega', {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
+  estado: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'pendiente', // Estados posibles: 'pendiente', 'revisado'
+},
+
 }, {
   tableName: 'entregas',
   timestamps: false,

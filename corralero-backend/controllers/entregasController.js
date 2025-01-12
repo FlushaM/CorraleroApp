@@ -55,10 +55,11 @@ const registrarEntrega = async (req, res) => {
 
 // Obtener todas las entregas
 const obtenerEntregas = async (req, res) => {
-    const { supermercado } = req.user;
+    const { supermercado, rol } = req.user;
     try {
+        const whereCondition = rol === 'admin' ? {} : { supermercado };
         const entregas = await Entrega.findAll({
-            where: { supermercado },
+            where: whereCondition,
             order: [['fecha', 'DESC']],
         });
         res.json(entregas);
@@ -67,7 +68,6 @@ const obtenerEntregas = async (req, res) => {
         res.status(500).json({ error: 'Error al obtener entregas' });
     }
 };
-
 // Obtener detalles de una entrega específica
 const obtenerDetalleEntrega = async (req, res) => {
     const { id } = req.params;
@@ -81,8 +81,8 @@ const obtenerDetalleEntrega = async (req, res) => {
             where: { id_entrega: id },
             include: {
                 model: Producto,
-                as: 'producto', // Alias definido en la relación
-                attributes: ['descripcion'], // Seleccionar solo la columna necesaria
+                as: 'producto', // Alias definido en el modelo
+                attributes: ['descripcion'], // Selecciona únicamente la columna 'descripcion'
             },
         });
 
@@ -90,11 +90,57 @@ const obtenerDetalleEntrega = async (req, res) => {
             return res.status(404).json({ error: 'No se encontraron detalles para esta entrega' });
         }
 
-        res.json(detalles);
+        // Formatear los datos para el frontend
+        const detallesFormateados = detalles.map((detalle) => ({
+            codigo_producto: detalle.codigo_producto,
+            descripcion: detalle.producto ? detalle.producto.descripcion : 'Sin descripción',
+            cantidad: detalle.cantidad,
+        }));
+
+        res.json(detallesFormateados);
     } catch (error) {
         console.error('Error al obtener detalles de la entrega:', error);
         res.status(500).json({ error: 'Error al obtener detalles de la entrega' });
     }
 };
 
-module.exports = { registrarEntrega, obtenerEntregas, obtenerDetalleEntrega };
+const marcarRevisado = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const entrega = await Entrega.findByPk(id);
+        if (!entrega) {
+            return res.status(404).json({ error: 'Entrega no encontrada' });
+        }
+        entrega.estado = 'revisado';
+        await entrega.save();
+        res.json({ message: 'Entrega marcada como revisada' });
+    } catch (error) {
+        console.error('Error al marcar como revisado:', error);
+        res.status(500).json({ error: 'Error al marcar como revisado' });
+    }
+};
+
+const eliminarEntrega = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Verificar si la entrega existe
+        const entrega = await Entrega.findByPk(id);
+        if (!entrega) {
+            return res.status(404).json({ error: 'Entrega no encontrada' });
+        }
+
+        // Eliminar los detalles asociados
+        await DetalleEntrega.destroy({ where: { id_entrega: id } });
+
+        // Eliminar la entrega
+        await entrega.destroy();
+
+        res.json({ message: 'Entrega eliminada correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar entrega:', error);
+        res.status(500).json({ error: 'Error al eliminar entrega' });
+    }
+};
+
+
+module.exports = { registrarEntrega, obtenerEntregas, obtenerDetalleEntrega ,marcarRevisado,eliminarEntrega};
