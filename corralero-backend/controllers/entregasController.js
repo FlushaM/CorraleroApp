@@ -10,17 +10,27 @@ const registrarEntrega = async (req, res) => {
     }
 
     try {
-        const user = await Usuario.findByPk(id);
+        // Verificar que todos los productos pertenezcan al supermercado del usuario
+        for (const producto of productos) {
+            const productoValido = await Producto.findOne({
+                where: {
+                    codigo: producto.codigo,
+                    supermercado, // Validar que el producto pertenezca al supermercado del usuario
+                },
+            });
 
-        if (!user) {
-            return res.status(400).json({ error: 'Usuario no encontrado' });
+            if (!productoValido) {
+                return res.status(400).json({
+                    error: `El producto con código ${producto.codigo} no pertenece al supermercado ${supermercado}`,
+                });
+            }
         }
 
         // Crear la entrega
         const entrega = await Entrega.create({
-            responsable: user.nombre,
+            responsable: req.user.nombre, // Usar el nombre del usuario autenticado
             supermercado,
-            id_usuario: user.id_usuario,
+            id_usuario: id, // ID del usuario autenticado
         });
 
         // Crear los detalles de la entrega
@@ -33,7 +43,10 @@ const registrarEntrega = async (req, res) => {
 
         await DetalleEntrega.bulkCreate(detalles);
 
-        res.status(201).json({ message: 'Entrega registrada correctamente', idEntrega: entrega.id_entrega });
+        res.status(201).json({
+            message: 'Entrega registrada correctamente',
+            idEntrega: entrega.id_entrega,
+        });
     } catch (error) {
         console.error('Error al registrar entrega:', error);
         res.status(500).json({ error: 'Error al registrar entrega' });
