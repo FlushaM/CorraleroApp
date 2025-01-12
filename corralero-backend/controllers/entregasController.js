@@ -10,27 +10,30 @@ const registrarEntrega = async (req, res) => {
     }
 
     try {
-        // Verificar que todos los productos pertenezcan al supermercado del usuario
-        for (const producto of productos) {
-            const productoValido = await Producto.findOne({
-                where: {
-                    codigo: producto.codigo,
-                    supermercado, // Validar que el producto pertenezca al supermercado del usuario
-                },
-            });
+        const user = await Usuario.findByPk(id);
 
-            if (!productoValido) {
-                return res.status(400).json({
-                    error: `El producto con código ${producto.codigo} no pertenece al supermercado ${supermercado}`,
-                });
-            }
+        if (!user) {
+            return res.status(400).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Verificar que todos los productos pertenezcan al supermercado del usuario
+        const codigosProductos = productos.map((p) => p.codigo);
+        const productosValidos = await Producto.findAll({
+            where: {
+                codigo: codigosProductos,
+                supermercado, // Validar que los productos pertenezcan al supermercado del usuario
+            },
+        });
+
+        if (productosValidos.length !== productos.length) {
+            return res.status(400).json({ error: 'Uno o más productos no pertenecen a tu supermercado.' });
         }
 
         // Crear la entrega
         const entrega = await Entrega.create({
-            responsable: req.user.nombre, // Usar el nombre del usuario autenticado
+            responsable: user.nombre,
             supermercado,
-            id_usuario: id, // ID del usuario autenticado
+            id_usuario: user.id_usuario,
         });
 
         // Crear los detalles de la entrega
@@ -43,10 +46,7 @@ const registrarEntrega = async (req, res) => {
 
         await DetalleEntrega.bulkCreate(detalles);
 
-        res.status(201).json({
-            message: 'Entrega registrada correctamente',
-            idEntrega: entrega.id_entrega,
-        });
+        res.status(201).json({ message: 'Entrega registrada correctamente', idEntrega: entrega.id_entrega });
     } catch (error) {
         console.error('Error al registrar entrega:', error);
         res.status(500).json({ error: 'Error al registrar entrega' });

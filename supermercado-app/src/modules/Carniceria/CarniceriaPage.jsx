@@ -47,18 +47,29 @@ const CarniceriaPage = () => {
       setError("Por favor, ingresa un código válido y una cantidad mayor a 0.");
       return;
     }
-
+  
     try {
       const response = await axios.get(`http://localhost:5000/api/productos/${codigo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       if (response.data.valido) {
+        // Verificar que el producto pertenece al mismo supermercado
+        if (response.data.producto.supermercado !== user.supermercado) {
+          Swal.fire(
+            "Error",
+            `El producto con el código ${codigo} no pertenece a tu supermercado.`,
+            "error"
+          );
+          setCodigo(""); // Limpiar el campo del código
+          return;
+        }
+  
         const nuevoPeso = parseFloat(kilos);
-
+  
         // Verificar si el código ya existe en la lista
         const productoExistente = productos.find((producto) => producto.codigo === codigo);
-
+  
         if (productoExistente) {
           // Si el producto ya existe, suma los kilos al peso actual
           const nuevaLista = productos.map((producto) =>
@@ -77,7 +88,7 @@ const CarniceriaPage = () => {
           guardarListaEnLocalStorage(nuevaLista); // Guardar en localStorage
           Swal.fire("Agregado", "Producto agregado correctamente.", "success");
         }
-
+  
         // Limpiar los campos de entrada
         setCodigo("");
         setKilos("");
@@ -90,7 +101,7 @@ const CarniceriaPage = () => {
       setError("Error al validar producto");
     }
   };
-
+  
   const eliminarProducto = (codigo) => {
     Swal.fire({
       title: "¿Estás seguro?",
