@@ -32,5 +32,11 @@ const DetalleEntrega = sequelize.define('DetalleEntrega', {
   tableName: 'detalle_entrega',
   timestamps: false,
 });
+// Relación con Producto
+DetalleEntrega.belongsTo(Producto, {
+  foreignKey: 'codigo_producto',
+  targetKey: 'codigo', // Esto asegura que usamos 'codigo' de Producto
+  as: 'producto', // Alias
+});
 
 module.exports = DetalleEntrega;

@@ -66,7 +66,11 @@ const obtenerDetalleEntrega = async (req, res) => {
     try {
         const detalles = await DetalleEntrega.findAll({
             where: { id_entrega: id },
-            include: { model: Producto, attributes: ['descripcion'] },
+            include: {
+                model: Producto,
+                as: 'producto', // Alias definido en la relación
+                attributes: ['descripcion'], // Seleccionar solo la columna necesaria
+            },
         });
 
         if (detalles.length === 0) {
