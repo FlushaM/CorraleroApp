@@ -42,67 +42,42 @@ const registrarEntrega = async (req, res) => {
 
 // Obtener todas las entregas
 const obtenerEntregas = async (req, res) => {
-  const { supermercado } = req.user;
-  try {
-    const entregas = await Entrega.findAll({
-      where: { supermercado },
-      include: [
-        {
-          model: Usuario,
-          as: 'usuario', // Alias configurado en la asociación
-          attributes: ['nombre', 'email'], // Datos que quieres obtener del usuario
-        },
-      ],
-      order: [['fecha', 'DESC']],
-    });
-    res.json(entregas);
-  } catch (error) {
-    console.error('Error al obtener entregas:', error);
-    res.status(500).json({ error: 'Error al obtener entregas' });
-  }
+    const { supermercado } = req.user;
+    try {
+        const entregas = await Entrega.findAll({
+            where: { supermercado },
+            order: [['fecha', 'DESC']],
+        });
+        res.json(entregas);
+    } catch (error) {
+        console.error('Error al obtener entregas:', error);
+        res.status(500).json({ error: 'Error al obtener entregas' });
+    }
 };
 
 // Obtener detalles de una entrega específica
 const obtenerDetalleEntrega = async (req, res) => {
-  const { id } = req.params;
+    const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({ error: 'El ID de la entrega es requerido' });
-  }
-
-  try {
-    const detalles = await DetalleEntrega.findAll({
-      where: { id_entrega: id },
-      include: [
-        {
-          model: Producto,
-          as: 'producto',
-          attributes: ['codigo', 'descripcion'], // Datos que quieres del producto
-        },
-        {
-          model: Entrega,
-          as: 'entrega',
-          include: [
-            {
-              model: Usuario,
-              as: 'usuario', // Alias configurado en la asociación
-              attributes: ['nombre', 'email'], // Datos del usuario
-            },
-          ],
-          attributes: ['responsable', 'supermercado', 'fecha'], // Datos que quieres de Entrega
-        },
-      ],
-    });
-
-    if (detalles.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron detalles para esta entrega' });
+    if (!id) {
+        return res.status(400).json({ error: 'El ID de la entrega es requerido' });
     }
 
-    res.json(detalles);
-  } catch (error) {
-    console.error('Error al obtener detalles de la entrega:', error);
-    res.status(500).json({ error: 'Error al obtener detalles de la entrega' });
-  }
+    try {
+        const detalles = await DetalleEntrega.findAll({
+            where: { id_entrega: id },
+            include: { model: Producto, attributes: ['descripcion'] },
+        });
+
+        if (detalles.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron detalles para esta entrega' });
+        }
+
+        res.json(detalles);
+    } catch (error) {
+        console.error('Error al obtener detalles de la entrega:', error);
+        res.status(500).json({ error: 'Error al obtener detalles de la entrega' });
+    }
 };
 
 module.exports = { registrarEntrega, obtenerEntregas, obtenerDetalleEntrega };
