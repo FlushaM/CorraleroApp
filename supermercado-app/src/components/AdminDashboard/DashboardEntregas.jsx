@@ -17,7 +17,7 @@ const DashboardEntregas = () => {
   // Función para obtener entregas (ahora está definida correctamente para que se pueda reutilizar)
   const fetchEntregas = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/entregas", {
+      const response = await axios.get("https://corralerointranet.cl/api/entregas/", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEntregas(response.data);
@@ -34,7 +34,7 @@ const DashboardEntregas = () => {
   const verDetalles = async (idEntrega) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/entregas/${idEntrega}`,
+        `https://corralerointranet.cl/api/entregas/${idEntrega}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setDetalles(response.data);
@@ -110,7 +110,7 @@ const DashboardEntregas = () => {
       if (result.isConfirmed) {
         try {
           await axios.patch(
-            `http://localhost:5000/api/entregas/${idEntrega}`,
+            `https://corralerointranet.cl/api/entregas/${idEntrega}`,
             { estado: "revisado" },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -143,7 +143,7 @@ const DashboardEntregas = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/api/entregas/${idEntrega}`, {
+          await axios.delete(`https://corralerointranet.cl/api/entregas/${idEntrega}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           Swal.fire("Eliminado", "Entrega eliminada correctamente", "success");
